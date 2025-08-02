@@ -6,7 +6,7 @@ function ChatWindow() {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    const sendMessage = async (userInput) => {
+const sendMessage = async (userInput) => {
     const userMessage = { role: "user", content: userInput };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
@@ -19,43 +19,38 @@ function ChatWindow() {
         temperature: 0.5,
         topP: 1,
         runtimeContext: {},
-        threadId: "38-IT-A",
+      threadId: "38-IT-A", // or any unique value
         resourceId: "weatherAgent",
     };
 
     try {
         const response = await fetch(
-        "https://brief-thousands-sunset-9fcb1c78-485f-4967-ac04-2759a8fa1462.mastra.cloud/api/agents/weatherAgent/stream",
+        "https://millions-screeching-vultur.mastra.cloud/api/agents/weatherAgent", // ❗non-streaming fallback URL
         {
             method: "POST",
             headers: {
             "Content-Type": "application/json",
-            "Authorization": "Bearer test-openai-key",
+            "x-mastra-dev-playground": "true", // needed for dev environment
+            "Authorization": "Bearer test-openai-key", // if required
             },
             body: JSON.stringify(payload),
         }
-        );
+    );
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let botReply = "";
+        const data = await response.json();
+        console.log("Response data:", data);
 
-        while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        const reply = data?.result || "Sorry, no response received.";
 
-        const chunk = decoder.decode(value, { stream: true });
-        botReply += chunk;
-
-        setMessages((prev) => [
-            ...prev.filter((msg) => msg.role !== "assistant"),
-            { role: "assistant", content: botReply },
-        ]);
-        }
-    } catch (error) {
         setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Sorry, something went wrong." },
+        { role: "assistant", content: reply }
+        ]);
+    } catch (error) {
+        console.error("API Error:", error);
+        setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Sorry, something went wrong." }
         ]);
     }
 
@@ -66,23 +61,23 @@ function ChatWindow() {
 const handleSubmit = (e) => {
     e.preventDefault();
     if (input.trim() !== "") {
-        sendMessage(input);
+    sendMessage(input);
     }
 };
 
 return (
     <div className="chat-container">
-        <h3>Weather Bot</h3>
+    <h3>Weather Bot</h3>
 
-        {messages.map((msg, index) => (
+    {messages.map((msg, index) => (
         <p key={index} className={`message ${msg.role === "user" ? "user" : "bot"}`}>
             <strong>{msg.role === "user" ? "You" : "Bot"}:</strong> {msg.content}
         </p>
     ))}
 
-    {isLoading && <p className="message bot">Bot is typing...</p>}
+    {isLoading && <p className="message bot">Bot is typing...</p>}    
 
-        <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit}>
         <input
             type="text"
             value={input}
@@ -90,10 +85,9 @@ return (
             placeholder="Type a message"
         />
         <button type="submit">Send</button>
-        </form>
+    </form>
     </div>
-    );
+);
 }
-
 
 export default ChatWindow;
